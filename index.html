@@ -345,8 +345,8 @@ main{padding:14px 16px;max-width:700px;margin:0 auto;}
 // Paste your project URL and anon key here, OR enter them in the
 // ⚙️ Config screen that appears on first load.
 // ═══════════════════════════════════════
-let SUPABASE_URL  = localStorage.getItem('wc26_sb_url')  || '';
-let SUPABASE_ANON = localStorage.getItem('wc26_sb_key')  || '';
+let SUPABASE_URL  = localStorage.getItem('wc26_sb_url')  || 'https://cekeatlxiqggcucscbjd.supabase.co';
+let SUPABASE_ANON = localStorage.getItem('wc26_sb_key')  || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNla2VhdGx4aXFnZ2N1Y3NjYmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwNDYwMzYsImV4cCI6MjA5NjYyMjAzNn0.9LduCQMEe0L7FM1XXJwhmLs45tN4OeVEM5OqmLfj3SE';
 
 // Hard-code your values here to skip the config screen:
 // SUPABASE_URL  = 'https://xxxx.supabase.co';
@@ -930,16 +930,10 @@ function exitViewing(){
 // INIT
 // ═══════════════════════════════════════
 async function init() {
-  const configDone = localStorage.getItem('wc26_sb_url');
-  if (!configDone) {
-    // First ever visit — show config
-    document.getElementById('configSetup').style.display='';
-    document.getElementById('loginForm').style.display='none';
-    return;
-  }
-  // Config done, show login form
+  // Credentials are hardcoded — skip config screen, go straight to login
   document.getElementById('configSetup').style.display='none';
   document.getElementById('loginForm').style.display='';
+
   if (!sb) {
     document.getElementById('loginMode').innerHTML='<span style="color:var(--teal)">📱 Local mode</span> — picks saved on this device only.';
   }
