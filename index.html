@@ -968,6 +968,38 @@ function renderFinalView() {
 }
 
 // ═══════════════════════════════════════
+// ADMIN
+// ═══════════════════════════════════════
+const ADMIN_NAME = 'Kyle Fitzpatrick';
+const isAdmin = () => currentPlayer?.name === ADMIN_NAME;
+// Picks are visible to all only after lock time; before that only admin can view others
+const canViewOthers = () => isAdmin() || isLocked();
+
+async function adminWipePlayer(playerId, playerName) {
+  if (!isAdmin()) return;
+  if (!confirm(`⚠️ Delete ALL picks and data for "${playerName}"?\n\nThis cannot be undone.`)) return;
+  try {
+    await sb.from('picks').delete().eq('player_id', playerId);
+    await sb.from('players').delete().eq('id', playerId);
+    alert(`✓ "${playerName}" has been removed from the pool.`);
+    renderStandings();
+  } catch(e) { alert('Error: ' + e.message); }
+}
+
+async function adminWipeAll() {
+  if (!isAdmin()) return;
+  if (!confirm('⚠️ WIPE ALL players and picks from the pool?\n\nThis deletes everyone including yourself. This cannot be undone.')) return;
+  if (!confirm('Are you absolutely sure? This is irreversible.')) return;
+  try {
+    await sb.from('picks').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    await sb.from('players').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    localStorage.removeItem('wc26player');
+    alert('✓ All data wiped. Reloading…');
+    location.reload();
+  } catch(e) { alert('Error: ' + e.message); }
+}
+
+// ═══════════════════════════════════════
 // STANDINGS
 // ═══════════════════════════════════════
 async function renderStandings() {
@@ -977,8 +1009,7 @@ async function renderStandings() {
   if (!sb) {
     const submitted=localStorage.getItem('wc26submitted_'+currentPlayer?.name)==='1';
     cont.innerHTML=`<p class="note" style="margin-bottom:12px">
-      <span style="color:var(--teal)">📱 Local mode</span> — multi-player standings need Supabase.<br>
-      Tap <strong style="color:var(--white)">⚙️ Supabase Settings</strong> on the login screen to set it up.</p>
+      <span style="color:var(--teal)">📱 Local mode</span> — multi-player standings need Supabase.</p>
       <table class="standings-table"><thead><tr><th>#</th><th>Player</th><th>Score</th><th>Status</th></tr></thead>
       <tbody><tr class="me"><td class="srank r1">1</td>
         <td><span class="sname">${currentPlayer?.name||'You'} (you)</span></td>
@@ -997,20 +1028,46 @@ async function renderStandings() {
       const pk=picksMap[pl.id];
       return {id:pl.id,name:pl.name,submitted:!!pk?.submitted,score:0,haspicks:!!pk};
     }).sort((a,b)=>b.score-a.score);
-    let html=`<table class="standings-table"><thead><tr><th>#</th><th>Player</th><th>Score</th><th>Status</th></tr></thead><tbody>`;
+
+    const viewable = canViewOthers();
+    const lockMsg = !viewable
+      ? `<p class="note" style="margin-bottom:12px;border-color:var(--teal)">
+          🔒 <strong style="color:var(--white)">Picks are private until the tournament starts.</strong><br>
+          You'll be able to view everyone's picks after June 12.</p>`
+      : '';
+
+    let html = lockMsg;
+
+    // Admin controls
+    if (isAdmin()) {
+      html += `<div style="margin-bottom:14px;padding:11px 13px;background:#1a1a0a;border:1px solid rgba(212,160,23,.4);border-radius:var(--r)">
+        <div style="font-family:'Bebas Neue',sans-serif;letter-spacing:1px;color:var(--gold);margin-bottom:8px">⚙️ Admin Controls</div>
+        <button class="btn btn-r" style="font-size:11px" onclick="adminWipeAll()">🗑 Wipe All Data</button>
+      </div>`;
+    }
+
+    html+=`<table class="standings-table"><thead><tr><th>#</th><th>Player</th><th>Score</th><th>Status</th>${isAdmin()?'<th></th>':''}</tr></thead><tbody>`;
     rows.forEach((r,i)=>{
       const isMe=currentPlayer&&r.id===currentPlayer.id;
       const subPill=r.submitted?'<span class="pill pill-green">Submitted</span>':
         r.haspicks?'<span class="pill pill-gray">Draft</span>':'<span class="pill pill-gray">Not started</span>';
       const rankCls=i===0?'r1':i===1?'r2':i===2?'r3':'';
-      const nameCls=r.haspicks?'sname clickable':'sname';
+      // Name is clickable only if viewable (admin or post-lock), or it's your own row
+      const canClick = r.haspicks && (viewable || isMe);
+      const nameCls = canClick ? 'sname clickable' : 'sname';
+      const nameClick = canClick ? `onclick="viewPlayerPicks('${r.id}','${r.name.replace(/'/g,"\\'")}')"` : '';
+      const adminDel = isAdmin() && !isMe
+        ? `<td><button class="btn btn-r" style="font-size:10px;padding:3px 8px" onclick="adminWipePlayer('${r.id}','${r.name.replace(/'/g,"\\'")}')">✕</button></td>`
+        : isAdmin() ? '<td></td>' : '';
       html+=`<tr class="${isMe?'me':''}">
         <td class="srank ${rankCls}">${i+1}</td>
-        <td><span class="${nameCls}" onclick="viewPlayerPicks('${r.id}','${r.name.replace(/'/g,"\\'")}')">
-          ${r.name}${isMe?' (you)':''}</span></td>
-        <td class="sscore">${r.score}</td><td>${subPill}</td></tr>`;
+        <td><span class="${nameCls}" ${nameClick}>${r.name}${isMe?' (you)':''}</span></td>
+        <td class="sscore">${r.score}</td><td>${subPill}</td>${adminDel}</tr>`;
     });
-    html+='</tbody></table><p class="note" style="margin-top:12px;font-size:11px">Scores update as official results are entered. Click a name to view their picks.</p>';
+    html+='</tbody></table>';
+    if (viewable) {
+      html+='<p class="note" style="margin-top:12px;font-size:11px">Click a name to view their full bracket. Scores update as results are entered.</p>';
+    }
     cont.innerHTML=html;
   } catch(e) {
     cont.innerHTML='<p style="color:var(--red);padding:16px">Error loading standings: '+e.message+'</p>';
@@ -1022,9 +1079,14 @@ async function renderStandings() {
 // ═══════════════════════════════════════
 let viewingState=null;
 
-async function viewPlayerPicks(playerId,playerName){
-  if(!sb){alert('Viewing other players requires Supabase to be connected.');return;}
-  if(currentPlayer&&playerId===currentPlayer.id){exitViewing();return;}
+async function viewPlayerPicks(playerId, playerName){
+  if (!sb) { alert('Viewing other players requires Supabase.'); return; }
+  if (currentPlayer && playerId === currentPlayer.id) { exitViewing(); return; }
+  // Block non-admin viewing before lock
+  if (!canViewOthers()) {
+    alert('🔒 Picks are private until the tournament starts on June 12.\nCheck back then to see everyone\'s brackets!');
+    return;
+  }
   try {
     const {data}=await sb.from('picks').select('picks_json').eq('player_id',playerId).single();
     if(!data?.picks_json){alert(`${playerName} hasn't submitted picks yet.`);return;}
