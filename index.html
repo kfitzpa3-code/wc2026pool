@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>2026 World Cup Pool</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap');
 :root {
@@ -144,6 +144,9 @@ main{padding:14px 16px;max-width:700px;margin:0 auto;}
 .mrow.win{background:#1a4015;border-left:4px solid var(--gold);padding-left:5px;}
 .mrow.win .mn{color:var(--gold-lt);font-weight:700;}
 .mrow.win .mf{filter:drop-shadow(0 0 3px rgba(212,160,23,.5));}
+.mrank{font-size:10px;color:var(--gray);flex-shrink:0;min-width:28px;text-align:right;}
+.mrow.win .mrank{color:rgba(212,160,23,.6);}
+.trank{font-size:10px;color:var(--gray);margin-left:auto;padding-right:4px;flex-shrink:0;}
 .wbadge{font-size:9px;font-weight:700;color:var(--gold);background:rgba(212,160,23,.18);
   border-radius:3px;padding:1px 4px;flex-shrink:0;letter-spacing:.5px;}
 .mf{font-size:16px;flex-shrink:0;}
@@ -656,21 +659,21 @@ function renderGroups() {
       if(!lock){
         const ud=rp===0?'disabled':'', dd=rp===3?'disabled':'';
         if(is3){
-          row.innerHTML=`${bgs[rp]}<span class="tflag">${flag}</span><span class="tname">${name}</span>
+          row.innerHTML=`${bgs[rp]}<span class="tflag">${flag}</span><span class="tname">${name}</span><span class="trank">${rankOf(name)}</span>
             <div class="mvbtns">
               <button class="mv" ${ud} onclick="event.stopPropagation();mvTeam('${gl}',${rp},-1)">▲</button>
               <button class="mv" ${dd} onclick="event.stopPropagation();mvTeam('${gl}',${rp},+1)">▼</button>
             </div><div class="qtick">${isQ?'✓':'+'}</div>`;
           row.addEventListener('click',()=>toggle3(name));
         } else {
-          row.innerHTML=`${bgs[rp]}<span class="tflag">${flag}</span><span class="tname">${name}</span>
+          row.innerHTML=`${bgs[rp]}<span class="tflag">${flag}</span><span class="tname">${name}</span><span class="trank">${rankOf(name)}</span>
             <div class="mvbtns">
               <button class="mv" ${ud} onclick="mvTeam('${gl}',${rp},-1)">▲</button>
               <button class="mv" ${dd} onclick="mvTeam('${gl}',${rp},+1)">▼</button>
             </div>`;
         }
       } else {
-        row.innerHTML=`${bgs[rp]}<span class="tflag">${flag}</span><span class="tname">${name}</span>`;
+        row.innerHTML=`${bgs[rp]}<span class="tflag">${flag}</span><span class="tname">${name}</span><span class="trank">${rankOf(name)}</span>`;
       }
       list.appendChild(row);
     });
@@ -730,6 +733,25 @@ function proceedR32(){
 }
 
 // ═══════════════════════════════════════
+// FIFA WORLD RANKINGS (March 2025)
+// ═══════════════════════════════════════
+const FIFA_RANK = {
+  'Argentina':1,'France':2,'Spain':3,'England':4,'Brazil':5,
+  'Portugal':6,'Belgium':7,'Netherlands':8,'Germany':9,'Uruguay':10,
+  'Colombia':11,'Italy':12,'Morocco':13,'Japan':14,'United States':15,
+  'Croatia':16,'Mexico':17,'Senegal':18,'Ecuador':19,'Switzerland':20,
+  'Sweden':21,'Austria':22,'Türkiye':23,'South Korea':24,'Hungary':25,
+  'Denmark':26,'Algeria':27,'Norway':28,'Canada':29,'Australia':30,
+  'Serbia':31,'Slovakia':32,'Czech Republic':33,'Ukraine':34,'Poland':35,
+  'Czechia':33,'Ivory Coast':36,'Tunisia':37,'Paraguay':38,'Saudi Arabia':39,
+  'Japan':14,'Egypt':40,'Iran':41,'Scotland':42,'South Africa':43,
+  'Qatar':44,'Bosnia & Herz.':47,'Panama':48,'Cape Verde':49,
+  'Ghana':50,'Congo DR':51,'Jordan':52,'Iraq':53,'Uzbekistan':54,
+  'New Zealand':95,'Haiti':96,'Curaçao':82,
+};
+function rankOf(name){ return FIFA_RANK[name] ? '#'+FIFA_RANK[name] : ''; }
+
+// ═══════════════════════════════════════
 // BUILD FEED ARRAYS FOR KNOCKOUT
 // ═══════════════════════════════════════
 function buildR32Feed(st){
@@ -744,18 +766,22 @@ function buildSFFeed(st){st=st||S; return SF_FEED.flatMap(([a,b])=>[st.qf[a]||nu
 // RENDER KNOCKOUT STAGES — STACKED
 // ═══════════════════════════════════════
 function makeMatchSlot(nameA, nameB, stateArr, idx, matchId, round, rerender, st) {
-  const displaySt = st||S;
   const slot=document.createElement('div'); slot.className='mslot';
-  if(matchId){const h=document.createElement('div');h.className='mslot-header';h.textContent=matchId;slot.appendChild(h);}
+  if(matchId){
+    const h=document.createElement('div');h.className='mslot-header';h.textContent=matchId;
+    slot.appendChild(h);
+  }
   const winner=stateArr[idx];
-  [[nameA],[nameB]].forEach(([name])=>{
+  [nameA, nameB].forEach(name=>{
     const row=document.createElement('div');
     const isTbd=!name;
     const isWin=!isTbd&&winner===name;
     row.className='mrow'+(isTbd?' tbd':'')+(isWin?' win':'')+(locked()?' locked-ui':'');
     const flag=isTbd?'—':flagOf(name);
+    const rank=isTbd?'':rankOf(name);
     const wb=isWin?`<span class="wbadge">✓ ADV</span>`:'';
-    row.innerHTML=`<span class="mf">${flag}</span><span class="mn${isTbd?' tbd':''}">${isTbd?'TBD':name}</span>${wb}`;
+    const rankSpan=rank?`<span class="mrank">${rank}</span>`:'';
+    row.innerHTML=`<span class="mf">${flag}</span><span class="mn${isTbd?' tbd':''}">${isTbd?'TBD':name}</span>${rankSpan}${wb}`;
     if(!isTbd&&!locked()){
       row.addEventListener('click',()=>{stateArr[idx]=name;savePicks();rerender();});
     }
@@ -768,7 +794,7 @@ function renderR32() {
   const cont=document.getElementById('r32c'); cont.innerHTML='';
   const st=viewingPlayer?viewingState:S;
   const feed=buildR32Feed(st);
-  const stArr=viewingPlayer?viewingState.r32:S.r32;
+  const stArr=viewingPlayer?viewingState.r32:S.r32;  // renamed from sb to stArr
   const sections=[
     {title:'M73–M76',   matches:[0,1,2,3]},
     {title:'M77–M80',   matches:[4,5,6,7]},
@@ -776,23 +802,25 @@ function renderR32() {
     {title:'M85–M88',   matches:[12,13,14,15]},
   ];
   sections.forEach(sec=>{
-    const s=document.createElement('div'); s.className='ko-section';
-    s.innerHTML=`<div class="ko-section-title">${sec.title}</div>`;
+    const sec_el=document.createElement('div'); sec_el.className='ko-section';
+    sec_el.innerHTML=`<div class="ko-section-title">${sec.title}</div>`;
     sec.matches.forEach(mi=>{
-      const sa=feed[mi*2], sb=feed[mi*2+1];
-      s.appendChild(makeMatchSlot(sa.tbd?null:sa.name, sb.tbd?null:sb.name, stArr, mi, R32_DEF[mi].id, 'r32', ()=>showTab('r32'), st));
+      const slotA=feed[mi*2], slotB=feed[mi*2+1];
+      sec_el.appendChild(makeMatchSlot(
+        slotA.tbd?null:slotA.name,
+        slotB.tbd?null:slotB.name,
+        stArr, mi, R32_DEF[mi].id, 'r32', renderR32, st
+      ));
     });
-    cont.appendChild(s);
+    cont.appendChild(sec_el);
   });
 }
-
-function renderR16() { showTab('r16'); }
 
 function renderKOStage(contId, count, stateArr, feed, matchIds, tabId) {
   const cont=document.getElementById(contId); cont.innerHTML='';
   const st=viewingPlayer?viewingState:S;
   const arr=viewingPlayer?(tabId==='r16'?viewingState.r16:tabId==='qf'?viewingState.qf:viewingState.sf):stateArr;
-  const feedSt = tabId==='r16'?buildR16Feed(st):tabId==='qf'?buildQFFeed(st):buildSFFeed(st);
+  const feedSt=tabId==='r16'?buildR16Feed(st):tabId==='qf'?buildQFFeed(st):buildSFFeed(st);
   for(let i=0;i<count;i++){
     const na=feedSt[i*2]||null, nb=feedSt[i*2+1]||null;
     cont.appendChild(makeMatchSlot(na,nb,arr,i,matchIds[i],tabId,()=>showTab(tabId),st));
