@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2026 World Cup Pool</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap');
+:root {
+  --pitch:#152e20; --dark:#0d2218; --card:#1c3d2a; --card-hi:#214530;
+  --gold:#d4a017; --gold-lt:#f0c040; --white:#f0f0ec; --gray:#8a9a8e;
+  --red:#c0392b; --teal:#7abba8; --line:rgba(212,160,23,0.2); --r:6px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--pitch);color:var(--white);font-family:'Inter',sans-serif;font-size:13px;min-height:100vh;}
+
+/* ── HEADER ── */
+header{background:var(--dark);border-bottom:1px solid var(--line);padding:12px 16px 9px;
+  display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+  position:sticky;top:0;z-index:200;}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:21px;letter-spacing:2px;color:var(--gold);line-height:1;}
+.logo span{color:var(--white);}
+.hright{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.hstat{font-size:11px;color:var(--gray);text-align:right;}
+.hstat strong{color:var(--gold-lt);font-size:12px;display:block;}
+.userbadge{background:rgba(212,160,23,0.15);border:1px solid var(--gold);border-radius:20px;
+  padding:4px 10px;font-size:12px;font-weight:600;color:var(--gold);cursor:pointer;}
+.lockbadge{background:rgba(192,57,43,0.2);border:1px solid var(--red);border-radius:20px;
+  padding:4px 10px;font-size:11px;font-weight:600;color:var(--red);}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:1px;padding:7px 16px 0;border-bottom:1px solid var(--line);
+  background:var(--dark);overflow-x:auto;scrollbar-width:none;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab-btn{background:none;border:none;color:var(--gray);font-family:'Inter',sans-serif;
+  font-size:11px;font-weight:600;padding:6px 10px 8px;cursor:pointer;
+  border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;}
+.tab-btn:hover:not(:disabled){color:var(--white);}
+.tab-btn.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-btn:disabled{opacity:.3;cursor:not-allowed;}
+
+/* ── MAIN ── */
+main{padding:14px 16px;max-width:700px;margin:0 auto;}
+.view{display:none;}.view.active{display:block;}
+.stitle{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:var(--gold);margin-bottom:9px;}
+.note{font-size:12px;color:#b0c4b8;margin-bottom:12px;padding:9px 12px;background:var(--dark);
+  border-left:3px solid var(--gold);border-radius:0 4px 4px 0;line-height:1.7;}
+
+/* ── LOGIN SCREEN ── */
+.login-wrap{max-width:380px;margin:40px auto;padding:24px;background:var(--card);
+  border:1px solid var(--line);border-radius:var(--r);}
+.login-wrap h2{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;
+  color:var(--gold);margin-bottom:6px;}
+.login-wrap p{font-size:12px;color:var(--gray);margin-bottom:18px;line-height:1.5;}
+.finput{width:100%;padding:10px 12px;background:#0d2218;border:1px solid rgba(255,255,255,.2);
+  border-radius:var(--r);color:var(--white);font-size:14px;font-family:'Inter',sans-serif;outline:none;}
+.finput:focus{border-color:var(--gold);}
+.fbtn{width:100%;margin-top:10px;padding:11px;border-radius:var(--r);font-family:'Inter',sans-serif;
+  font-size:14px;font-weight:700;cursor:pointer;border:none;background:var(--gold);color:#000;transition:all .15s;}
+.fbtn:hover{background:var(--gold-lt);}
+.ferr{color:var(--red);font-size:12px;margin-top:8px;}
+
+/* ── PROGRESS BAR ── */
+.pbar{background:rgba(255,255,255,.1);border-radius:4px;height:4px;overflow:hidden;margin-bottom:4px;}
+.pfill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-lt));border-radius:4px;transition:width .4s;}
+.plabel{font-size:11px;color:var(--gray);text-align:right;margin-bottom:12px;}
+
+/* ── GROUP CARDS ── */
+.ggrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;}
+.gcard{background:var(--card);border:1px solid rgba(212,160,23,.3);border-radius:var(--r);overflow:hidden;}
+.ghdr{background:var(--dark);padding:7px 11px;font-family:'Bebas Neue',sans-serif;font-size:13px;
+  letter-spacing:1.5px;color:var(--gold);display:flex;justify-content:space-between;align-items:center;
+  border-bottom:1px solid rgba(212,160,23,.2);}
+.ghdr small{font-family:'Inter',sans-serif;font-size:10px;color:var(--gray);font-weight:500;letter-spacing:0;}
+.tlist{padding:2px 0;}
+.trow{display:flex;align-items:center;gap:7px;padding:6px 9px;
+  border-bottom:1px solid rgba(255,255,255,.05);color:var(--white);transition:background .1s;}
+.trow:last-child{border-bottom:none;}
+.trow.r1{background:#2a4a18;border-left:3px solid var(--gold);}
+.trow.r2{background:#1e3530;border-left:3px solid #5a8a9a;}
+.trow.r3{background:#1a3230;border-left:3px solid #3a6a60;cursor:pointer;}
+.trow.r3:hover:not(.locked-ui){background:#1f3d38;}
+.trow.r3.qsel{background:#173830;border-left:3px solid var(--teal);}
+.trow.r4{background:var(--card);border-left:3px solid transparent;padding-left:12px;}
+.tflag{font-size:18px;flex-shrink:0;line-height:1;}
+.tname{flex:1;font-weight:500;font-size:12px;}
+.rpos{width:19px;height:19px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;}
+.rpos.p1{background:var(--gold);color:#000;}
+.rpos.p2{background:#3a6080;color:#aaddee;}
+.rpos.p3{background:#2a5040;color:var(--teal);font-size:8px;}
+.rpos.p4{background:rgba(255,255,255,.08);color:var(--gray);}
+.mvbtns{display:flex;flex-direction:column;gap:1px;flex-shrink:0;}
+.mv{width:21px;height:14px;background:var(--dark);border:1px solid rgba(255,255,255,.18);
+  border-radius:3px;color:#b0c4b8;font-size:9px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:all .12s;padding:0;line-height:1;}
+.mv:hover:not([disabled]){background:rgba(212,160,23,.3);color:var(--gold);border-color:var(--gold);}
+.mv[disabled]{opacity:.2;cursor:default;}
+.qtick{width:19px;height:19px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;
+  justify-content:center;font-size:11px;font-weight:700;border:1px dashed rgba(122,187,168,.4);
+  color:rgba(122,187,168,.4);transition:all .15s;margin-left:1px;}
+.qsel .qtick{background:var(--teal);border-color:var(--teal);color:var(--dark);}
+
+/* ── QUALIFIER BANNER ── */
+.qbanner{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;
+  background:var(--dark);border:1px solid rgba(122,187,168,.4);border-radius:var(--r);
+  padding:9px 12px;margin-bottom:12px;}
+.qbig{font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--teal);line-height:1;}
+.qlbl{font-size:11px;color:#b0c4b8;line-height:1.5;}
+.qlbl strong{color:var(--white);display:block;}
+.qdots{display:flex;gap:4px;flex-wrap:wrap;}
+.qdot{width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,.1);
+  border:1px solid rgba(122,187,168,.3);transition:all .2s;}
+.qdot.on{background:var(--teal);border-color:var(--teal);}
+
+/* ── PROCEED / SUBMIT ── */
+.procbar{margin-top:14px;padding:11px 14px;background:var(--dark);border:1px solid var(--line);
+  border-radius:var(--r);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.pmsg{font-size:12px;color:var(--gray);}
+.pmsg.ok{color:var(--teal);font-weight:600;}
+.procbtn{padding:9px 18px;border-radius:var(--r);font-family:'Inter',sans-serif;font-size:12px;
+  font-weight:700;cursor:pointer;border:none;transition:all .15s;background:var(--teal);color:var(--dark);}
+.procbtn:hover:not([disabled]){background:#9ecfbe;}
+.procbtn[disabled]{background:rgba(255,255,255,.1);color:var(--gray);cursor:not-allowed;}
+.submitbtn{padding:11px 22px;border-radius:var(--r);font-family:'Inter',sans-serif;font-size:14px;
+  font-weight:700;cursor:pointer;border:none;background:var(--gold);color:#000;transition:all .15s;width:100%;margin-top:14px;}
+.submitbtn:hover:not([disabled]){background:var(--gold-lt);}
+.submitbtn[disabled]{background:rgba(255,255,255,.1);color:var(--gray);cursor:not-allowed;}
+
+/* ── KNOCKOUT MATCHES — STACKED VERTICALLY ── */
+.ko-section{margin-bottom:20px;}
+.ko-section-title{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1.5px;
+  color:var(--gold);padding:6px 0 8px;border-bottom:1px solid var(--line);margin-bottom:10px;}
+.mslot{background:var(--card);border:1px solid rgba(212,160,23,.22);border-radius:var(--r);
+  overflow:hidden;margin-bottom:8px;}
+.mslot-header{background:var(--dark);padding:3px 8px;font-size:9px;color:var(--gray);
+  letter-spacing:.5px;border-bottom:1px solid rgba(255,255,255,.06);}
+.mrow{display:flex;align-items:center;gap:6px;padding:8px 9px;cursor:pointer;
+  transition:all .13s;min-height:34px;border-bottom:1px solid rgba(255,255,255,.06);color:var(--white);}
+.mrow:last-child{border-bottom:none;}
+.mrow:hover:not(.tbd):not(.locked-ui){background:var(--card-hi);}
+.mrow.tbd{cursor:default;opacity:.45;}
+.mrow.win{background:#1a4015;border-left:4px solid var(--gold);padding-left:5px;}
+.mrow.win .mn{color:var(--gold-lt);font-weight:700;}
+.mrow.win .mf{filter:drop-shadow(0 0 3px rgba(212,160,23,.5));}
+.wbadge{font-size:9px;font-weight:700;color:var(--gold);background:rgba(212,160,23,.18);
+  border-radius:3px;padding:1px 4px;flex-shrink:0;letter-spacing:.5px;}
+.mf{font-size:16px;flex-shrink:0;}
+.mn{font-size:12px;font-weight:500;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mn.tbd{color:var(--gray);font-style:italic;}
+.locked-ui{cursor:default !important;}
+
+/* ── CHAMPION BOX ── */
+.champbox{background:linear-gradient(135deg,rgba(212,160,23,.22),rgba(212,160,23,.05));
+  border:1px solid var(--gold);border-radius:var(--r);padding:16px;text-align:center;margin-top:10px;}
+.clbl{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;color:var(--gold);margin-bottom:6px;}
+.cflag{font-size:34px;margin-bottom:4px;}
+.cname{font-size:14px;font-weight:700;color:var(--gold-lt);}
+.cname.tbd{color:var(--gray);font-style:italic;font-weight:400;font-size:12px;}
+
+/* ── STANDINGS ── */
+.standings-table{width:100%;border-collapse:collapse;margin-top:10px;}
+.standings-table th{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:1px;
+  color:var(--gold);padding:8px 10px;text-align:left;border-bottom:1px solid var(--line);}
+.standings-table td{padding:10px 10px;border-bottom:1px solid rgba(255,255,255,.05);font-size:13px;}
+.standings-table tr:hover td{background:var(--card);}
+.standings-table tr.me td{background:rgba(212,160,23,.08);}
+.srank{font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--gray);width:30px;}
+.srank.r1{color:var(--gold);}
+.srank.r2{color:#aaddee;}
+.srank.r3{color:var(--teal);}
+.sname{font-weight:600;color:var(--white);}
+.sname.clickable{cursor:pointer;color:var(--gold-lt);text-decoration:underline dotted;}
+.sscore{font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--gold-lt);}
+.ssub{font-size:10px;color:var(--gray);}
+.pill{display:inline-block;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;}
+.pill-green{background:rgba(122,187,168,.2);color:var(--teal);}
+.pill-gray{background:rgba(255,255,255,.08);color:var(--gray);}
+.pill-red{background:rgba(192,57,43,.2);color:var(--red);}
+
+/* ── SCORING INFO ── */
+.scoring-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0;}
+.sc-item{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:9px 11px;}
+.sc-pts{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--gold);line-height:1;}
+.sc-desc{font-size:11px;color:var(--gray);margin-top:2px;}
+
+/* ── ACTIONS ── */
+.acts{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+.btn{padding:7px 13px;border-radius:var(--r);font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all .15s;}
+.btn-g{background:var(--gold);color:#000;}.btn-g:hover{background:var(--gold-lt);}
+.btn-o{background:transparent;color:var(--white);border:1px solid var(--line);}.btn-o:hover{border-color:var(--gold);color:var(--gold);}
+.btn-r{background:transparent;color:var(--red);border:1px solid rgba(192,57,43,.4);}.btn-r:hover{background:rgba(192,57,43,.12);}
+.btn-t{background:transparent;color:var(--teal);border:1px solid rgba(122,187,168,.4);}.btn-t:hover{background:rgba(122,187,168,.1);}
+
+/* ── VIEWING ANOTHER PLAYER ── */
+.viewing-banner{background:rgba(212,160,23,.12);border:1px solid var(--gold);border-radius:var(--r);
+  padding:9px 13px;margin-bottom:13px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.viewing-banner span{font-size:12px;color:var(--gold);}
+
+/* ── MODAL / OVERLAY ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:300;
+  display:flex;align-items:center;justify-content:center;padding:20px;}
+.modal{background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+  padding:20px;max-width:360px;width:100%;}
+.modal h3{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;color:var(--gold);margin-bottom:10px;}
+.modal p{font-size:12px;color:#b0c4b8;line-height:1.6;margin-bottom:14px;}
+.modal-btns{display:flex;gap:8px;justify-content:flex-end;}
+
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.2);
+  border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-msg{text-align:center;padding:40px;color:var(--gray);font-size:13px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">2026 <span>World Cup</span> Pool</div>
+  <div class="hright">
+    <div id="lockIndicator" style="display:none" class="lockbadge">🔒 Picks Locked</div>
+    <div id="userBadge" style="display:none" class="userbadge" onclick="showTab('standings')"></div>
+    <div class="hstat"><strong id="hstat">Loading…</strong><span id="hsubstat">Jun 11 – Jul 19</span></div>
+  </div>
+</header>
+
+<div class="tabs" id="tabBar">
+  <button class="tab-btn active"  id="tab-groups"   onclick="showTab('groups')">① Groups</button>
+  <button class="tab-btn disabled" id="tab-r32"     onclick="showTab('r32')">② R32</button>
+  <button class="tab-btn disabled" id="tab-r16"     onclick="showTab('r16')">③ R16</button>
+  <button class="tab-btn disabled" id="tab-qf"      onclick="showTab('qf')">④ QF</button>
+  <button class="tab-btn disabled" id="tab-sf"      onclick="showTab('sf')">⑤ SF</button>
+  <button class="tab-btn disabled" id="tab-final"   onclick="showTab('final')">⑥ Final</button>
+  <button class="tab-btn"         id="tab-standings" onclick="showTab('standings')">🏆 Standings</button>
+  <button class="tab-btn"         id="tab-scoring"   onclick="showTab('scoring')">📊 Scoring</button>
+</div>
+
+<main id="mainContent">
+
+<!-- CONFIG SCREEN -->
+<div id="view-login" class="view active">
+  <div id="configSetup" style="display:none" class="login-wrap">
+    <h2>⚙️ Setup Required</h2>
+    <p>Enter your Supabase project URL and anon key to enable multi-player mode. Get these from your Supabase project → Settings → API.<br><br>
+    <strong style="color:var(--teal)">No Supabase?</strong> Skip this to play in single-player mode (picks saved locally on this device only).</p>
+    <input class="finput" id="sbUrlInput" placeholder="https://xxxx.supabase.co" style="margin-bottom:8px">
+    <input class="finput" id="sbKeyInput" placeholder="eyJ... (anon/public key)">
+    <button class="fbtn" onclick="saveSupabaseConfig()" style="margin-top:8px">Save & Connect</button>
+    <button class="fbtn" onclick="skipConfig()" style="margin-top:6px;background:#1c3d2a;border:1px solid var(--line);color:var(--gray)">Skip — Use Local Mode</button>
+    <div class="ferr" id="configErr"></div>
+  </div>
+  <div id="loginForm" class="login-wrap">
+    <h2>Join the Pool</h2>
+    <p id="loginMode">Enter your name to join. Same name = load your existing picks.</p>
+    <input class="finput" id="nameInput" placeholder="Your name or nickname" maxlength="30" autocomplete="off">
+    <button class="fbtn" onclick="joinPool()">Enter Pool →</button>
+    <div class="ferr" id="loginErr"></div>
+    <div style="margin-top:14px;text-align:center">
+      <button class="btn btn-o" style="font-size:11px" onclick="showConfigSetup()">⚙️ Supabase Settings</button>
+    </div>
+  </div>
+</div>
+
+<!-- GROUP STAGE -->
+<div id="view-groups" class="view">
+  <div id="viewingBanner" class="viewing-banner" style="display:none">
+    <span id="viewingName">Viewing picks for: </span>
+    <button class="btn btn-t" onclick="exitViewing()">← Back to my picks</button>
+  </div>
+  <div class="stitle">Group Stage</div>
+  <p class="note">
+    Use <strong style="color:var(--white)">▲▼</strong> to rank teams.
+    <span style="color:var(--gold)">● 1st</span> &amp; <span style="color:#aaddee">● 2nd</span> advance automatically.
+    <span style="color:var(--teal)">● Tap a 3rd-place row</span> to pick 8 qualifiers.
+  </p>
+  <div class="qbanner">
+    <div style="display:flex;align-items:center;gap:9px">
+      <div class="qbig"><span id="q3n">0</span>/8</div>
+      <div class="qlbl"><strong>3rd-Place Qualifiers</strong>Tap ✦ row to select</div>
+    </div>
+    <div class="qdots" id="qdots"></div>
+  </div>
+  <div class="pbar"><div class="pfill" id="gpfill" style="width:0%"></div></div>
+  <p class="plabel" id="gplbl">0 of 8 selected</p>
+  <div class="ggrid" id="ggrid"></div>
+  <div class="procbar" id="procbar">
+    <div class="pmsg" id="pmsg">Select all 8 third-place qualifiers</div>
+    <button class="procbtn" id="procbtn" disabled>Round of 32 →</button>
+  </div>
+</div>
+
+<!-- KNOCKOUT VIEWS -->
+<div id="view-r32"   class="view"><div id="viewingBanner32"  class="viewing-banner" style="display:none"><span id="viewingName32"></span><button class="btn btn-t" onclick="exitViewing()">← Back</button></div><div class="stitle">Round of 32</div><div id="r32c"></div></div>
+<div id="view-r16"   class="view"><div id="viewingBanner16"  class="viewing-banner" style="display:none"><span id="viewingName16"></span><button class="btn btn-t" onclick="exitViewing()">← Back</button></div><div class="stitle">Round of 16</div><div id="r16c"></div></div>
+<div id="view-qf"    class="view"><div id="viewingBannerQF"  class="viewing-banner" style="display:none"><span id="viewingNameQF"></span><button class="btn btn-t" onclick="exitViewing()">← Back</button></div><div class="stitle">Quarterfinals</div><div id="qfc"></div></div>
+<div id="view-sf"    class="view"><div id="viewingBannerSF"  class="viewing-banner" style="display:none"><span id="viewingNameSF"></span><button class="btn btn-t" onclick="exitViewing()">← Back</button></div><div class="stitle">Semifinals</div><div id="sfc"></div></div>
+<div id="view-final" class="view"><div id="viewingBannerF"   class="viewing-banner" style="display:none"><span id="viewingNameF"></span><button class="btn btn-t" onclick="exitViewing()">← Back</button></div><div class="stitle">The Final</div><div id="finalc"></div></div>
+
+<!-- STANDINGS -->
+<div id="view-standings" class="view">
+  <div class="stitle">Standings</div>
+  <p class="note">Scores update as results come in. Click a name to view their picks.</p>
+  <div id="standingsContent"><div class="loading-msg"><span class="spinner"></span>Loading…</div></div>
+</div>
+
+<!-- SCORING -->
+<div id="view-scoring" class="view">
+  <div class="stitle">How Scoring Works</div>
+  <p class="note">Points are awarded when official results are entered. Picks lock at kickoff on June 11.</p>
+  <div class="scoring-grid">
+    <div class="sc-item"><div class="sc-pts">1 pt</div><div class="sc-desc">Team advances from group (in top 2)</div></div>
+    <div class="sc-item"><div class="sc-pts">+1 bonus</div><div class="sc-desc">Correct exact finish position (1st, 2nd, or 3rd)</div></div>
+    <div class="sc-item"><div class="sc-pts">2 pts</div><div class="sc-desc">Correct Round of 32 winner</div></div>
+    <div class="sc-item"><div class="sc-pts">3 pts</div><div class="sc-desc">Correct Round of 16 winner</div></div>
+    <div class="sc-item"><div class="sc-pts">5 pts</div><div class="sc-desc">Correct Quarterfinal winner</div></div>
+    <div class="sc-item"><div class="sc-pts">8 pts</div><div class="sc-desc">Correct Semifinal winner</div></div>
+    <div class="sc-item"><div class="sc-pts">5 pts</div><div class="sc-desc">Correct 3rd-place team</div></div>
+    <div class="sc-item"><div class="sc-pts" style="color:var(--gold-lt)">15 pts</div><div class="sc-desc">Correct World Cup Champion 🏆</div></div>
+  </div>
+  <p class="note" style="margin-top:6px">
+    <strong style="color:var(--white)">Max possible score ≈ 118 pts.</strong><br>
+    Group stage (48 pts max) · Knockout (55 pts max) · Champion bonus (15 pts)<br>
+    The late-round picks carry most of the weight — a correct champion pick alone can swing the leaderboard.
+  </p>
+</div>
+
+</main>
+
+<!-- CONFIRM SUBMIT MODAL -->
+<div id="submitModal" class="overlay" style="display:none">
+  <div class="modal">
+    <h3>Submit Your Picks?</h3>
+    <p>Once the tournament starts on <strong style="color:var(--white)">June 11</strong>, picks are locked and cannot be changed.<br><br>You can still re-submit to update your picks <em>before</em> then.</p>
+    <div id="submitQ3List" style="font-size:11px;color:var(--teal);margin-bottom:12px;line-height:1.8;"></div>
+    <div class="modal-btns">
+      <button class="btn btn-o" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-g" onclick="doSubmit()">✓ Submit Picks</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════
+// SUPABASE CONFIG
+// Paste your project URL and anon key here, OR enter them in the
+// ⚙️ Config screen that appears on first load.
+// ═══════════════════════════════════════
+let SUPABASE_URL  = localStorage.getItem('wc26_sb_url')  || '';
+let SUPABASE_ANON = localStorage.getItem('wc26_sb_key')  || '';
+
+// Hard-code your values here to skip the config screen:
+// SUPABASE_URL  = 'https://xxxx.supabase.co';
+// SUPABASE_ANON = 'eyJ...';
+
+let sb = null;
+function initSupabase() {
+  if (!SUPABASE_URL || !SUPABASE_ANON ||
+      SUPABASE_URL === 'YOUR_SUPABASE_URL' ||
+      SUPABASE_URL === 'LOCAL') return false;
+  try {
+    // Handle different CDN bundle export names
+    const createClient =
+      (typeof supabase !== 'undefined' && supabase.createClient) ||
+      (typeof Supabase !== 'undefined' && Supabase.createClient) ||
+      window.supabase?.createClient;
+    if (!createClient) { console.error('Supabase createClient not found'); return false; }
+    sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+    return true;
+  } catch(e) { console.error('Supabase init failed', e); return false; }
+}
+const sbReady = initSupabase();
+
+// Picks lock at first kickoff: June 11, 2026 3:00 PM ET = 19:00 UTC
+const LOCK_TIME = new Date('2026-06-11T19:00:00Z');
+const isLocked  = () => new Date() >= LOCK_TIME;
+
+// ═══════════════════════════════════════
+// GROUPS DATA
+// ═══════════════════════════════════════
+const GRP = {
+  A:{t:['Czechia','Mexico','South Africa','South Korea'],         f:['🇨🇿','🇲🇽','🇿🇦','🇰🇷']},
+  B:{t:['Bosnia & Herz.','Canada','Qatar','Switzerland'],         f:['🇧🇦','🇨🇦','🇶🇦','🇨🇭']},
+  C:{t:['Brazil','Haiti','Morocco','Scotland'],                   f:['🇧🇷','🇭🇹','🇲🇦','🏴󠁧󠁢󠁳󠁣󠁴󠁿']},
+  D:{t:['Australia','Paraguay','Türkiye','United States'],        f:['🇦🇺','🇵🇾','🇹🇷','🇺🇸']},
+  E:{t:['Curaçao','Ecuador','Germany','Ivory Coast'],             f:['🇨🇼','🇪🇨','🇩🇪','🇨🇮']},
+  F:{t:['Japan','Netherlands','Sweden','Tunisia'],                f:['🇯🇵','🇳🇱','🇸🇪','🇹🇳']},
+  G:{t:['Belgium','Egypt','Iran','New Zealand'],                  f:['🇧🇪','🇪🇬','🇮🇷','🇳🇿']},
+  H:{t:['Cape Verde','Saudi Arabia','Spain','Uruguay'],           f:['🇨🇻','🇸🇦','🇪🇸','🇺🇾']},
+  I:{t:['France','Iraq','Norway','Senegal'],                      f:['🇫🇷','🇮🇶','🇳🇴','🇸🇳']},
+  J:{t:['Algeria','Argentina','Austria','Jordan'],                f:['🇩🇿','🇦🇷','🇦🇹','🇯🇴']},
+  K:{t:['Colombia','Congo DR','Portugal','Uzbekistan'],           f:['🇨🇴','🇨🇩','🇵🇹','🇺🇿']},
+  L:{t:['Croatia','England','Ghana','Panama'],                    f:['🇭🇷','🏴󠁧󠁢󠁥󠁮󠁧󠁿','🇬🇭','🇵🇦']},
+};
+
+// Official R32 matchups M73–M88
+const R32_DEF = [
+  {id:'M73',a:{pos:'2',g:'A'}, b:{pos:'2',g:'B'}},
+  {id:'M74',a:{pos:'1',g:'E'}, b:{pos:'3',p:['A','B','C','D','F']}},
+  {id:'M75',a:{pos:'1',g:'F'}, b:{pos:'2',g:'C'}},
+  {id:'M76',a:{pos:'1',g:'C'}, b:{pos:'2',g:'F'}},
+  {id:'M77',a:{pos:'1',g:'I'}, b:{pos:'3',p:['C','D','F','G','H']}},
+  {id:'M78',a:{pos:'2',g:'E'}, b:{pos:'2',g:'I'}},
+  {id:'M79',a:{pos:'1',g:'A'}, b:{pos:'3',p:['C','E','F','H','I']}},
+  {id:'M80',a:{pos:'1',g:'L'}, b:{pos:'3',p:['E','H','I','J','K']}},
+  {id:'M81',a:{pos:'1',g:'D'}, b:{pos:'3',p:['B','E','F','I','J']}},
+  {id:'M82',a:{pos:'1',g:'G'}, b:{pos:'3',p:['A','E','H','I','J']}},
+  {id:'M83',a:{pos:'2',g:'K'}, b:{pos:'2',g:'L'}},
+  {id:'M84',a:{pos:'1',g:'H'}, b:{pos:'2',g:'J'}},
+  {id:'M85',a:{pos:'1',g:'B'}, b:{pos:'3',p:['E','F','G','I','J']}},
+  {id:'M86',a:{pos:'1',g:'J'}, b:{pos:'2',g:'H'}},
+  {id:'M87',a:{pos:'1',g:'K'}, b:{pos:'3',p:['D','E','I','J','L']}},
+  {id:'M88',a:{pos:'2',g:'D'}, b:{pos:'2',g:'G'}},
+];
+
+// R16 feeds: [r32idxA, r32idxB]
+const R16_FEED = [[0,1],[2,3],[4,5],[6,7],[8,9],[10,11],[12,13],[14,15]];
+const R16_IDS  = ['M89','M90','M91','M92','M93','M94','M95','M96'];
+const QF_FEED  = [[0,1],[2,3],[4,5],[6,7]];
+const QF_IDS   = ['M97','M98','M99','M100'];
+const SF_FEED  = [[0,1],[2,3]];
+const SF_IDS   = ['M101','M102'];
+
+// ═══════════════════════════════════════
+// APP STATE
+// ═══════════════════════════════════════
+let currentPlayer = null;  // {id, name}
+let viewingPlayer  = null;  // {id, name} — when viewing someone else
+let S = freshState();       // picks state
+
+function freshState() {
+  const g={};
+  Object.keys(GRP).forEach(k=>{g[k]=[0,1,2,3];});
+  return {g, q3:[], r32:new Array(16).fill(null), r16:new Array(8).fill(null),
+          qf:new Array(4).fill(null), sf:new Array(2).fill(null), third:null, champ:null};
+}
+
+// ═══════════════════════════════════════
+// CONFIG UI
+// ═══════════════════════════════════════
+function showConfigSetup() {
+  document.getElementById('configSetup').style.display='';
+  document.getElementById('loginForm').style.display='none';
+  const u=localStorage.getItem('wc26_sb_url')||'';
+  const k=localStorage.getItem('wc26_sb_key')||'';
+  if(u&&u!=='LOCAL') document.getElementById('sbUrlInput').value=u;
+  if(k) document.getElementById('sbKeyInput').value=k;
+}
+function saveSupabaseConfig() {
+  const url=document.getElementById('sbUrlInput').value.trim();
+  const key=document.getElementById('sbKeyInput').value.trim();
+  const err=document.getElementById('configErr');
+  if(!url.startsWith('https://')){err.textContent='URL must start with https://';return;}
+  if(key.length<20){err.textContent='Key looks too short — check it again';return;}
+  SUPABASE_URL=url; SUPABASE_ANON=key;
+  localStorage.setItem('wc26_sb_url',url);
+  localStorage.setItem('wc26_sb_key',key);
+  if(!initSupabase()){err.textContent='Could not connect. Check your URL and key.';return;}
+  err.textContent='';
+  document.getElementById('configSetup').style.display='none';
+  document.getElementById('loginForm').style.display='';
+  document.getElementById('loginMode').innerHTML='<span style="color:var(--teal)">✓ Supabase connected!</span> Enter your name to join the pool.';
+}
+function skipConfig() {
+  localStorage.setItem('wc26_sb_url','LOCAL');
+  document.getElementById('configSetup').style.display='none';
+  document.getElementById('loginForm').style.display='';
+  document.getElementById('loginMode').innerHTML='<span style="color:var(--teal)">📱 Local mode</span> — picks saved on this device only.';
+}
+
+// ═══════════════════════════════════════
+// AUTH / JOIN
+// ═══════════════════════════════════════
+async function joinPool() {
+  const name = document.getElementById('nameInput').value.trim();
+  const err  = document.getElementById('loginErr');
+  if (!name) { err.textContent='Please enter a name.'; return; }
+  if (name.length < 2) { err.textContent='Name must be at least 2 characters.'; return; }
+  err.textContent='Loading…';
+
+  if (sb) {
+    try {
+      // Insert player (ignore if name already exists)
+      await sb.from('players').insert({name}).select().maybeSingle();
+      // Then fetch by name (works whether new or existing)
+      const {data, error} = await sb.from('players')
+        .select('id,name').eq('name', name).single();
+      if (error || !data) { err.textContent='DB error: '+(error?.message||'player not found'); return; }
+      currentPlayer = {id:data.id, name:data.name};
+      localStorage.setItem('wc26player', JSON.stringify(currentPlayer));
+      const {data:picks} = await sb.from('picks')
+        .select('picks_json').eq('player_id', data.id).maybeSingle();
+      if (picks?.picks_json) {
+        S = picks.picks_json;
+        Object.keys(GRP).forEach(g=>{if(!S.g[g])S.g[g]=[0,1,2,3];});
+      }
+    } catch(e) { err.textContent='Connection error: '+e.message; return; }
+  } else {
+    currentPlayer = {id:'local_'+name, name};
+    localStorage.setItem('wc26player', JSON.stringify(currentPlayer));
+    const sp = localStorage.getItem('wc26picks_'+name);
+    if (sp) { try { S=JSON.parse(sp); Object.keys(GRP).forEach(g=>{if(!S.g[g])S.g[g]=[0,1,2,3];}); } catch(e){} }
+  }
+  err.textContent='';
+  initApp();
+}
+
+function initApp() {
+  document.getElementById('view-login').classList.remove('active');
+  document.getElementById('userBadge').textContent = '👤 '+currentPlayer.name;
+  document.getElementById('userBadge').style.display='';
+  if (isLocked()) document.getElementById('lockIndicator').style.display='';
+  renderGroups();
+  updateUI();
+  showTab('groups');
+}
+
+// ═══════════════════════════════════════
+// SAVE PICKS (auto-save on every change)
+// ═══════════════════════════════════════
+async function savePicks() {
+  if (!currentPlayer || viewingPlayer) return;
+  if (isLocked()) return;
+  if (sb) {
+    try {
+      await sb.from('picks').upsert(
+        { player_id: currentPlayer.id, picks_json: S, updated_at: new Date().toISOString() },
+        { onConflict: 'player_id' }
+      );
+    } catch(e) { console.warn('Supabase save failed, localStorage used', e.message); }
+  }
+  // Always save to localStorage as backup
+  localStorage.setItem('wc26picks_'+currentPlayer.name, JSON.stringify(S));
+  updateUI();
+}
+
+// ═══════════════════════════════════════
+// SUBMIT
+// ═══════════════════════════════════════
+function openSubmitModal() {
+  const list = document.getElementById('submitQ3List');
+  list.innerHTML = 'Your 8 third-place qualifiers:<br>' +
+    S.q3.map(t=>'• '+flagOf(t)+' '+t).join('<br>');
+  document.getElementById('submitModal').style.display='flex';
+}
+function closeModal() { document.getElementById('submitModal').style.display='none'; }
+async function doSubmit() {
+  closeModal();
+  if (sb) {
+    try {
+      await sb.from('picks').upsert(
+        { player_id: currentPlayer.id, picks_json: S, submitted: true, updated_at: new Date().toISOString() },
+        { onConflict: 'player_id' }
+      );
+    } catch(e) { console.warn('Supabase submit failed', e.message); }
+  }
+  localStorage.setItem('wc26picks_'+currentPlayer.name, JSON.stringify(S));
+  localStorage.setItem('wc26submitted_'+currentPlayer.name, '1');
+  alert('✓ Picks saved! You can update them any time before June 11.');
+}
+
+// ═══════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════
+function teamAt(grp,rank,st){
+  st=st||S; const i=st.g[grp][rank]; return {name:GRP[grp].t[i],flag:GRP[grp].f[i]};
+}
+function flagOf(name){
+  for(const g of Object.values(GRP)){const i=g.t.indexOf(name);if(i>=0)return g.f[i];}return'🏴';
+}
+function resolveSlot(slot,st){
+  st=st||S;
+  if(slot.pos==='1'){const t=teamAt(slot.g,0,st);return{name:t.name,flag:t.flag,tbd:false};}
+  if(slot.pos==='2'){const t=teamAt(slot.g,1,st);return{name:t.name,flag:t.flag,tbd:false};}
+  const match=st.q3.find(nm=>{
+    for(const[gl,gd]of Object.entries(GRP)){
+      const ti=gd.t.indexOf(nm);if(ti>=0&&st.g[gl][2]===ti&&slot.p.includes(gl))return true;
+    }return false;
+  });
+  if(match)return{name:match,flag:flagOf(match),tbd:false};
+  return{name:`Best 3rd (${slot.p.join('/')})`,flag:'—',tbd:true};
+}
+const locked = () => isLocked() || viewingPlayer !== null;
+
+// ═══════════════════════════════════════
+// TAB NAV
+// ═══════════════════════════════════════
+function updateUI() {
+  const n=S.q3.length, done=n>=8;
+  document.getElementById('hstat').textContent = !currentPlayer ? 'Not joined' :
+    isLocked() ? 'Picks locked 🔒' : done ? 'Group stage complete ✓' : `${n}/8 qualifiers`;
+  ['r32','r16','qf','sf','final'].forEach(id=>{
+    const b=document.getElementById('tab-'+id);
+    if(b){b.disabled=!done; b.classList.toggle('disabled',!done);}
+  });
+  const qn=document.getElementById('q3n'); if(qn)qn.textContent=n;
+  const pf=document.getElementById('gpfill'); if(pf)pf.style.width=Math.round(n/8*100)+'%';
+  const pl=document.getElementById('gplbl'); if(pl)pl.textContent=`${n} of 8 selected`;
+  const dots=document.getElementById('qdots');
+  if(dots){dots.innerHTML='';for(let i=0;i<8;i++){const d=document.createElement('div');
+    d.className='qdot'+(i<n?' on':'');if(i<n)d.title=S.q3[i];dots.appendChild(d);}}
+  const pb=document.getElementById('procbtn'); if(pb)pb.disabled=!done||locked();
+  const pm=document.getElementById('pmsg');
+  if(pm){if(!done){pm.className='pmsg';pm.textContent=`Select ${8-n} more qualifier${8-n===1?'':'s'}`;}
+    else if(isLocked()){pm.className='pmsg';pm.textContent='Picks are locked 🔒';}
+    else{pm.className='pmsg ok';pm.textContent='✓ All 8 selected — ready to proceed!';}}
+}
+
+function showTab(id) {
+  if(!currentPlayer && id!=='standings'&&id!=='scoring'){
+    alert('Enter your name first to join the pool!'); return;
+  }
+  const gated=['r32','r16','qf','sf','final'];
+  if(gated.includes(id)&&S.q3.length<8){
+    alert('Complete Group Stage first — select all 8 third-place qualifiers.'); return;
+  }
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  const tb=document.getElementById('tab-'+id); if(tb)tb.classList.add('active');
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+id).classList.add('active');
+  if(id==='r32')   renderKO('r32c',  R32_DEF.map((_,i)=>i), S.r32, buildR32Feed, R16_FEED.map(p=>R32_DEF[p[0]].id+' winner vs '+R32_DEF[p[1]].id+' winner'), R32_DEF.map(m=>m.id), 'r32');
+  if(id==='r16')   renderKOStage('r16c', 8, S.r16, buildR16Feed(), R16_IDS, 'r16');
+  if(id==='qf')    renderKOStage('qfc',  4, S.qf,  buildQFFeed(),  QF_IDS,  'qf');
+  if(id==='sf')    renderKOStage('sfc',  2, S.sf,  buildSFFeed(),  SF_IDS,  'sf');
+  if(id==='final') renderFinalView();
+  if(id==='standings') renderStandings();
+  updateViewingBanners();
+}
+
+function updateViewingBanners() {
+  const vp=viewingPlayer;
+  [['groups',''],['r32','32'],['r16','16'],['qf','QF'],['sf','SF'],['final','F']].forEach(([view,sfx])=>{
+    const el=document.getElementById('viewingBanner'+sfx);
+    const nm=document.getElementById('viewingName'+sfx);
+    if(!el)return;
+    el.style.display=vp?'flex':'none';
+    if(nm&&vp)nm.textContent=`👁 Viewing picks for: ${vp.name}`;
+  });
+}
+
+// ═══════════════════════════════════════
+// GROUP STAGE
+// ═══════════════════════════════════════
+function renderGroups() {
+  const grid=document.getElementById('ggrid'); grid.innerHTML='';
+  const st=viewingPlayer?viewingState:S;
+  const lock=locked();
+  Object.entries(GRP).forEach(([gl,gd])=>{
+    if(!st.g[gl])st.g[gl]=[0,1,2,3];
+    const order=st.g[gl];
+    const card=document.createElement('div'); card.className='gcard';
+    card.innerHTML=`<div class="ghdr">GROUP ${gl} <small>${lock?'':'▲▼ to rank'}</small></div>`;
+    const list=document.createElement('div'); list.className='tlist';
+    order.forEach((ti,rp)=>{
+      const name=gd.t[ti],flag=gd.f[ti];
+      const is3=(rp===2),isQ=is3&&st.q3.includes(name);
+      const row=document.createElement('div');
+      const cls=['r1','r2','r3','r4'][rp];
+      row.className='trow '+cls+(isQ?' qsel':'')+(lock?' locked-ui':'');
+      const bgs=['<div class="rpos p1">1</div>','<div class="rpos p2">2</div>','<div class="rpos p3">✦</div>','<div class="rpos p4">4</div>'];
+      if(!lock){
+        const ud=rp===0?'disabled':'', dd=rp===3?'disabled':'';
+        if(is3){
+          row.innerHTML=`${bgs[rp]}<span class="tflag">${flag}</span><span class="tname">${name}</span>
+            <div class="mvbtns">
+              <button class="mv" ${ud} onclick="event.stopPropagation();mvTeam('${gl}',${rp},-1)">▲</button>
+              <button class="mv" ${dd} onclick="event.stopPropagation();mvTeam('${gl}',${rp},+1)">▼</button>
+            </div><div class="qtick">${isQ?'✓':'+'}</div>`;
+          row.addEventListener('click',()=>toggle3(name));
+        } else {
+          row.innerHTML=`${bgs[rp]}<span class="tflag">${flag}</span><span class="tname">${name}</span>
+            <div class="mvbtns">
+              <button class="mv" ${ud} onclick="mvTeam('${gl}',${rp},-1)">▲</button>
+              <button class="mv" ${dd} onclick="mvTeam('${gl}',${rp},+1)">▼</button>
+            </div>`;
+        }
+      } else {
+        row.innerHTML=`${bgs[rp]}<span class="tflag">${flag}</span><span class="tname">${name}</span>`;
+      }
+      list.appendChild(row);
+    });
+    card.appendChild(list); grid.appendChild(card);
+  });
+
+  // Proceed / submit bar
+  const pb=document.getElementById('procbar');
+  if(pb){
+    const done=st.q3.length>=8;
+    if(!lock&&done&&!viewingPlayer){
+      pb.innerHTML=`<div class="pmsg ok">✓ All 8 qualifiers selected</div>
+        <button class="procbtn" onclick="proceedR32()">Round of 32 →</button>`;
+    } else if(!lock&&!viewingPlayer){
+      const n=st.q3.length;
+      pb.innerHTML=`<div class="pmsg">Select ${8-n} more qualifier${8-n===1?'':'s'}</div>
+        <button class="procbtn" disabled>Round of 32 →</button>`;
+    } else {
+      pb.innerHTML='';
+    }
+    // Submit button (always visible if not locked, not viewing)
+    if(!lock&&!viewingPlayer){
+      const sub=document.createElement('button');
+      sub.className='submitbtn';
+      sub.textContent='💾 Save / Submit My Picks';
+      sub.disabled=!done;
+      sub.onclick=openSubmitModal;
+      pb.parentNode.insertBefore(sub, pb.nextSibling);
+      // remove duplicate
+      document.querySelectorAll('.submitbtn').forEach((b,i)=>{if(i>0)b.remove();});
+    }
+  }
+  updateUI();
+}
+
+function toggle3(name){
+  if(locked())return;
+  const i=S.q3.indexOf(name);
+  if(i>=0){S.q3.splice(i,1);}
+  else{if(S.q3.length>=8){alert('Already 8 selected.');return;}S.q3.push(name);}
+  savePicks(); renderGroups();
+}
+
+function mvTeam(grp,rp,dir){
+  if(locked())return;
+  const order=S.g[grp],np=rp+dir;
+  if(np<0||np>3)return;
+  [rp,np].forEach(pos=>{if(pos===2){const nm=GRP[grp].t[order[pos]];const qi=S.q3.indexOf(nm);if(qi>=0)S.q3.splice(qi,1);}});
+  [order[rp],order[np]]=[order[np],order[rp]];
+  savePicks(); renderGroups();
+}
+
+function proceedR32(){
+  const list=S.q3.map(t=>'• '+flagOf(t)+' '+t).join('\n');
+  if(!confirm('Proceed to Round of 32?\n\nYour 8 third-place qualifiers:\n'+list+'\n\n(You can still come back to adjust picks before June 11)'))return;
+  showTab('r32');
+}
+
+// ═══════════════════════════════════════
+// BUILD FEED ARRAYS FOR KNOCKOUT
+// ═══════════════════════════════════════
+function buildR32Feed(st){
+  st=st||S;
+  return R32_DEF.flatMap(m=>[resolveSlot(m.a,st),resolveSlot(m.b,st)]);
+}
+function buildR16Feed(st){st=st||S; return R16_FEED.flatMap(([a,b])=>[st.r32[a]||null,st.r32[b]||null]);}
+function buildQFFeed(st){st=st||S; return QF_FEED.flatMap(([a,b])=>[st.r16[a]||null,st.r16[b]||null]);}
+function buildSFFeed(st){st=st||S; return SF_FEED.flatMap(([a,b])=>[st.qf[a]||null,st.qf[b]||null]);}
+
+// ═══════════════════════════════════════
+// RENDER KNOCKOUT STAGES — STACKED
+// ═══════════════════════════════════════
+function makeMatchSlot(nameA, nameB, stateArr, idx, matchId, round, rerender, st) {
+  const displaySt = st||S;
+  const slot=document.createElement('div'); slot.className='mslot';
+  if(matchId){const h=document.createElement('div');h.className='mslot-header';h.textContent=matchId;slot.appendChild(h);}
+  const winner=stateArr[idx];
+  [[nameA],[nameB]].forEach(([name])=>{
+    const row=document.createElement('div');
+    const isTbd=!name;
+    const isWin=!isTbd&&winner===name;
+    row.className='mrow'+(isTbd?' tbd':'')+(isWin?' win':'')+(locked()?' locked-ui':'');
+    const flag=isTbd?'—':flagOf(name);
+    const wb=isWin?`<span class="wbadge">✓ ADV</span>`:'';
+    row.innerHTML=`<span class="mf">${flag}</span><span class="mn${isTbd?' tbd':''}">${isTbd?'TBD':name}</span>${wb}`;
+    if(!isTbd&&!locked()){
+      row.addEventListener('click',()=>{stateArr[idx]=name;savePicks();rerender();});
+    }
+    slot.appendChild(row);
+  });
+  return slot;
+}
+
+function renderR32() {
+  const cont=document.getElementById('r32c'); cont.innerHTML='';
+  const st=viewingPlayer?viewingState:S;
+  const feed=buildR32Feed(st);
+  const stArr=viewingPlayer?viewingState.r32:S.r32;
+  const sections=[
+    {title:'M73–M76',   matches:[0,1,2,3]},
+    {title:'M77–M80',   matches:[4,5,6,7]},
+    {title:'M81–M84',   matches:[8,9,10,11]},
+    {title:'M85–M88',   matches:[12,13,14,15]},
+  ];
+  sections.forEach(sec=>{
+    const s=document.createElement('div'); s.className='ko-section';
+    s.innerHTML=`<div class="ko-section-title">${sec.title}</div>`;
+    sec.matches.forEach(mi=>{
+      const sa=feed[mi*2], sb=feed[mi*2+1];
+      s.appendChild(makeMatchSlot(sa.tbd?null:sa.name, sb.tbd?null:sb.name, stArr, mi, R32_DEF[mi].id, 'r32', ()=>showTab('r32'), st));
+    });
+    cont.appendChild(s);
+  });
+}
+
+function renderR16() { showTab('r16'); }
+
+function renderKOStage(contId, count, stateArr, feed, matchIds, tabId) {
+  const cont=document.getElementById(contId); cont.innerHTML='';
+  const st=viewingPlayer?viewingState:S;
+  const arr=viewingPlayer?(tabId==='r16'?viewingState.r16:tabId==='qf'?viewingState.qf:viewingState.sf):stateArr;
+  const feedSt = tabId==='r16'?buildR16Feed(st):tabId==='qf'?buildQFFeed(st):buildSFFeed(st);
+  for(let i=0;i<count;i++){
+    const na=feedSt[i*2]||null, nb=feedSt[i*2+1]||null;
+    cont.appendChild(makeMatchSlot(na,nb,arr,i,matchIds[i],tabId,()=>showTab(tabId),st));
+  }
+}
+
+function renderFinalView() {
+  const cont=document.getElementById('finalc'); cont.innerHTML='';
+  const st=viewingPlayer?viewingState:S;
+  const sf0=st.sf[0], sf1=st.sf[1];
+  const third3Arr=viewingPlayer?viewingState:S;
+  const champArr=viewingPlayer?viewingState:S;
+
+  // 3rd place match (M103)
+  const s3title=document.createElement('div'); s3title.className='ko-section-title';
+  s3title.textContent='M103 — 3rd Place Match (Miami, Jul 18)';
+  cont.appendChild(s3title);
+  const s3=document.createElement('div'); s3.className='mslot';
+  [sf0,sf1].forEach(name=>{
+    const row=document.createElement('div');
+    const isTbd=!name, isWin=!isTbd&&st.third===name;
+    row.className='mrow'+(isTbd?' tbd':'')+(isWin?' win':'')+(locked()?' locked-ui':'');
+    const wb=isWin?'<span class="wbadge">3RD ✓</span>':'';
+    row.innerHTML=`<span class="mf">${isTbd?'—':flagOf(name)}</span><span class="mn${isTbd?' tbd':''}">${isTbd?'SF loser TBD':name}</span>${wb}`;
+    if(!isTbd&&!locked())row.addEventListener('click',()=>{S.third=name;savePicks();renderFinalView();});
+    s3.appendChild(row);
+  });
+  cont.appendChild(s3);
+
+  // The Final (M104)
+  const sftitle=document.createElement('div'); sftitle.className='ko-section-title';
+  sftitle.style.marginTop='18px'; sftitle.style.color='var(--gold-lt)';
+  sftitle.textContent='M104 — THE FINAL · MetLife Stadium · Jul 19';
+  cont.appendChild(sftitle);
+  const sf=document.createElement('div'); sf.className='mslot';
+  [sf0,sf1].forEach(name=>{
+    const row=document.createElement('div');
+    const isTbd=!name, isWin=!isTbd&&st.champ===name;
+    row.className='mrow'+(isTbd?' tbd':'')+(isWin?' win':'')+(locked()?' locked-ui':'');
+    const wb=isWin?'<span class="wbadge">🏆 CHAMPION</span>':'';
+    row.innerHTML=`<span class="mf">${isTbd?'—':flagOf(name)}</span><span class="mn${isTbd?' tbd':''}">${isTbd?'Finalist TBD':name}</span>${wb}`;
+    if(!isTbd&&!locked())row.addEventListener('click',()=>{S.champ=name;savePicks();renderFinalView();});
+    sf.appendChild(row);
+  });
+  cont.appendChild(sf);
+
+  // Champion display
+  const cn=st.champ;
+  const box=document.createElement('div'); box.className='champbox';
+  box.innerHTML=`<div class="clbl">🏆 World Champion</div>
+    <div class="cflag">${cn?flagOf(cn):'🏆'}</div>
+    <div class="cname ${cn?'':'tbd'}">${cn||'Pick a winner above'}</div>`;
+  cont.appendChild(box);
+}
+
+// ═══════════════════════════════════════
+// STANDINGS
+// ═══════════════════════════════════════
+async function renderStandings() {
+  const cont=document.getElementById('standingsContent');
+  cont.innerHTML='<div class="loading-msg"><span class="spinner"></span>Loading…</div>';
+
+  if (!sb) {
+    const submitted=localStorage.getItem('wc26submitted_'+currentPlayer?.name)==='1';
+    cont.innerHTML=`<p class="note" style="margin-bottom:12px">
+      <span style="color:var(--teal)">📱 Local mode</span> — multi-player standings need Supabase.<br>
+      Tap <strong style="color:var(--white)">⚙️ Supabase Settings</strong> on the login screen to set it up.</p>
+      <table class="standings-table"><thead><tr><th>#</th><th>Player</th><th>Score</th><th>Status</th></tr></thead>
+      <tbody><tr class="me"><td class="srank r1">1</td>
+        <td><span class="sname">${currentPlayer?.name||'You'} (you)</span></td>
+        <td class="sscore">0</td>
+        <td>${submitted?'<span class="pill pill-green">Submitted</span>':'<span class="pill pill-gray">Draft</span>'}</td>
+      </tr></tbody></table>`;
+    return;
+  }
+
+  try {
+    const {data:players,error:pe}=await sb.from('players').select('id,name').order('name');
+    if(pe||!players){cont.innerHTML='<p style="color:var(--red);padding:16px">Could not load standings: '+(pe?.message||'unknown error')+'</p>';return;}
+    const {data:allPicks}=await sb.from('picks').select('player_id,picks_json,submitted,updated_at');
+    const picksMap={};(allPicks||[]).forEach(p=>{picksMap[p.player_id]=p;});
+    const rows=players.map(pl=>{
+      const pk=picksMap[pl.id];
+      return {id:pl.id,name:pl.name,submitted:!!pk?.submitted,score:0,haspicks:!!pk};
+    }).sort((a,b)=>b.score-a.score);
+    let html=`<table class="standings-table"><thead><tr><th>#</th><th>Player</th><th>Score</th><th>Status</th></tr></thead><tbody>`;
+    rows.forEach((r,i)=>{
+      const isMe=currentPlayer&&r.id===currentPlayer.id;
+      const subPill=r.submitted?'<span class="pill pill-green">Submitted</span>':
+        r.haspicks?'<span class="pill pill-gray">Draft</span>':'<span class="pill pill-gray">Not started</span>';
+      const rankCls=i===0?'r1':i===1?'r2':i===2?'r3':'';
+      const nameCls=r.haspicks?'sname clickable':'sname';
+      html+=`<tr class="${isMe?'me':''}">
+        <td class="srank ${rankCls}">${i+1}</td>
+        <td><span class="${nameCls}" onclick="viewPlayerPicks('${r.id}','${r.name.replace(/'/g,"\\'")}')">
+          ${r.name}${isMe?' (you)':''}</span></td>
+        <td class="sscore">${r.score}</td><td>${subPill}</td></tr>`;
+    });
+    html+='</tbody></table><p class="note" style="margin-top:12px;font-size:11px">Scores update as official results are entered. Click a name to view their picks.</p>';
+    cont.innerHTML=html;
+  } catch(e) {
+    cont.innerHTML='<p style="color:var(--red);padding:16px">Error loading standings: '+e.message+'</p>';
+  }
+}
+
+// ═══════════════════════════════════════
+// VIEW ANOTHER PLAYER'S PICKS
+// ═══════════════════════════════════════
+let viewingState=null;
+
+async function viewPlayerPicks(playerId,playerName){
+  if(!sb){alert('Viewing other players requires Supabase to be connected.');return;}
+  if(currentPlayer&&playerId===currentPlayer.id){exitViewing();return;}
+  try {
+    const {data}=await sb.from('picks').select('picks_json').eq('player_id',playerId).single();
+    if(!data?.picks_json){alert(`${playerName} hasn't submitted picks yet.`);return;}
+    viewingPlayer={id:playerId,name:playerName};
+    viewingState=data.picks_json;
+    Object.keys(GRP).forEach(g=>{if(!viewingState.g[g])viewingState.g[g]=[0,1,2,3];});
+    renderGroups();
+    showTab('groups');
+  } catch(e) { alert('Could not load picks: '+e.message); }
+}
+
+function exitViewing(){
+  viewingPlayer=null; viewingState=null;
+  renderGroups(); updateUI(); updateViewingBanners();
+}
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+async function init() {
+  const configDone = localStorage.getItem('wc26_sb_url');
+  if (!configDone) {
+    // First ever visit — show config
+    document.getElementById('configSetup').style.display='';
+    document.getElementById('loginForm').style.display='none';
+    return;
+  }
+  // Config done, show login form
+  document.getElementById('configSetup').style.display='none';
+  document.getElementById('loginForm').style.display='';
+  if (!sb) {
+    document.getElementById('loginMode').innerHTML='<span style="color:var(--teal)">📱 Local mode</span> — picks saved on this device only.';
+  }
+
+  // Try auto-login from localStorage
+  try {
+    const saved=localStorage.getItem('wc26player');
+    if (saved) {
+      const pl=JSON.parse(saved);
+      if (sb && !pl.id.startsWith('local_')) {
+        const {data}=await sb.from('players').select('id,name').eq('id',pl.id).single();
+        if (data) {
+          currentPlayer={id:data.id,name:data.name};
+          const {data:picks}=await sb.from('picks').select('picks_json').eq('player_id',data.id).single();
+          if(picks?.picks_json){S=picks.picks_json;Object.keys(GRP).forEach(g=>{if(!S.g[g])S.g[g]=[0,1,2,3];});}
+          document.getElementById('view-login').classList.remove('active');
+          initApp(); return;
+        }
+      } else if (pl.id && pl.id.startsWith('local_')) {
+        currentPlayer=pl;
+        const sp=localStorage.getItem('wc26picks_'+pl.name);
+        if(sp){try{S=JSON.parse(sp);Object.keys(GRP).forEach(g=>{if(!S.g[g])S.g[g]=[0,1,2,3];});}catch(e){}}
+        document.getElementById('view-login').classList.remove('active');
+        initApp(); return;
+      }
+    }
+  } catch(e){ console.warn('Auto-login failed',e); }
+  // Stay on login
+}
+
+init();
+</script>
+
+<!-- ═══════════════════════════════════════
+SUPABASE SETUP INSTRUCTIONS (remove before sharing)
+═══════════════════════════════════════
+1. Create a free project at https://supabase.com
+
+2. Run this SQL in the Supabase SQL Editor:
+
+CREATE TABLE players (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT UNIQUE NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE picks (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  player_id UUID REFERENCES players(id) ON DELETE CASCADE,
+  picks_json JSONB,
+  submitted BOOLEAN DEFAULT false,
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(player_id)
+);
+
+-- Allow public read/write (pool use — no auth needed)
+ALTER TABLE players ENABLE ROW LEVEL SECURITY;
+ALTER TABLE picks ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "public read players" ON players FOR SELECT USING (true);
+CREATE POLICY "public insert players" ON players FOR INSERT WITH CHECK (true);
+CREATE POLICY "public read picks"   ON picks FOR SELECT USING (true);
+CREATE POLICY "public upsert picks" ON picks FOR INSERT WITH CHECK (true);
+CREATE POLICY "public update picks" ON picks FOR UPDATE USING (true);
+
+3. Replace at top of this file:
+   const SUPABASE_URL  = 'YOUR_SUPABASE_URL';
+   const SUPABASE_ANON = 'YOUR_SUPABASE_ANON_KEY';
+   (both found in Project Settings → API)
+══════════════════════════════════════ -->
+</body>
+</html>
