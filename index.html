@@ -588,22 +588,13 @@ function flagOf(name){
   ).join('');
   return flag;
 }
-function resolveSlot(slot, st, usedQ3) {
+function resolveSlot(slot, st, q3Map, matchIdx) {
   st = st || S;
   if (slot.pos === '1') { const t=teamAt(slot.g,0,st); return {name:t.name,flag:t.flag,tbd:false}; }
   if (slot.pos === '2') { const t=teamAt(slot.g,1,st); return {name:t.name,flag:t.flag,tbd:false}; }
-  // 3rd place — find a qualifier from the allowed pools that hasn't been used yet
-  const match = st.q3.find(nm => {
-    if (usedQ3 && usedQ3.has(nm)) return false; // already assigned
-    for (const [gl,gd] of Object.entries(GRP)) {
-      const ti = gd.t.indexOf(nm);
-      if (ti >= 0 && st.g[gl][2] === ti && slot.p.includes(gl)) return true;
-    }
-    return false;
-  });
-  if (match) {
-    if (usedQ3) usedQ3.add(match);
-    return {name:match, flag:flagOf(match), tbd:false};
+  if (q3Map && q3Map.has(matchIdx)) {
+    const nm = q3Map.get(matchIdx);
+    return {name:nm, flag:flagOf(nm), tbd:false};
   }
   return {name:`Best 3rd (${slot.p.join('/')})`, flag:'—', tbd:true};
 }
@@ -783,12 +774,62 @@ function rankOf(name){ return FIFA_RANK[name] ? '#'+FIFA_RANK[name] : ''; }
 // ═══════════════════════════════════════
 // BUILD FEED ARRAYS FOR KNOCKOUT
 // ═══════════════════════════════════════
+// Find which group a team is ranked 3rd in
+function teamThirdGroup(name, st) {
+  st = st || S;
+  for (const [gl, gd] of Object.entries(GRP)) {
+    const ti = gd.t.indexOf(name);
+    if (ti >= 0 && st.g[gl][2] === ti) return gl;
+  }
+  return null;
+}
+
+// Pre-assign each 3rd-place qualifier to exactly one R32 slot.
+// Uses iterative single-option assignment (stable matching):
+// first assign any qualifier that fits only one remaining slot,
+// repeat until all are placed.
+function assignQ3ToSlots(st) {
+  st = st || S;
+  const thirdSlots = R32_DEF
+    .map((m, i) => ({ i, pool: m.b.pos==='3' ? m.b.p : m.a.pos==='3' ? m.a.p : null }))
+    .filter(x => x.pool !== null);
+
+  const assigned = new Map();   // matchIdx → team name
+  const usedTeams = new Set();
+
+  let changed = true;
+  while (changed) {
+    changed = false;
+    // Pass 1: assign any qualifier that fits exactly one unoccupied slot
+    for (const nm of st.q3) {
+      if (usedTeams.has(nm)) continue;
+      const grp = teamThirdGroup(nm, st);
+      if (!grp) continue;
+      const valid = thirdSlots.filter(x => !assigned.has(x.i) && x.pool.includes(grp));
+      if (valid.length === 1) {
+        assigned.set(valid[0].i, nm);
+        usedTeams.add(nm);
+        changed = true;
+      }
+    }
+  }
+  // Pass 2: assign remaining qualifiers to first available valid slot
+  for (const nm of st.q3) {
+    if (usedTeams.has(nm)) continue;
+    const grp = teamThirdGroup(nm, st);
+    if (!grp) continue;
+    const slot = thirdSlots.find(x => !assigned.has(x.i) && x.pool.includes(grp));
+    if (slot) { assigned.set(slot.i, nm); usedTeams.add(nm); }
+  }
+  return assigned;
+}
+
 function buildR32Feed(st) {
   st = st || S;
-  const usedQ3 = new Set(); // track which 3rd-place qualifiers have been assigned
-  return R32_DEF.flatMap(m => [
-    resolveSlot(m.a, st, usedQ3),
-    resolveSlot(m.b, st, usedQ3)
+  const q3Map = assignQ3ToSlots(st);
+  return R32_DEF.flatMap((m, i) => [
+    resolveSlot(m.a, st, q3Map, i),
+    resolveSlot(m.b, st, q3Map, i)
   ]);
 }
 function buildR16Feed(st){st=st||S; return R16_FEED.flatMap(([a,b])=>[st.r32[a]||null,st.r32[b]||null]);}
