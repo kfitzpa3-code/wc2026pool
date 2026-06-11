@@ -616,11 +616,11 @@ function showTab(id) {
   const tb=document.getElementById('tab-'+id); if(tb)tb.classList.add('active');
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.getElementById('view-'+id).classList.add('active');
-  if(id==='r32')   renderKO('r32c',  R32_DEF.map((_,i)=>i), S.r32, buildR32Feed, R16_FEED.map(p=>R32_DEF[p[0]].id+' winner vs '+R32_DEF[p[1]].id+' winner'), R32_DEF.map(m=>m.id), 'r32');
-  if(id==='r16')   renderKOStage('r16c', 8, S.r16, buildR16Feed(), R16_IDS, 'r16');
-  if(id==='qf')    renderKOStage('qfc',  4, S.qf,  buildQFFeed(),  QF_IDS,  'qf');
-  if(id==='sf')    renderKOStage('sfc',  2, S.sf,  buildSFFeed(),  SF_IDS,  'sf');
-  if(id==='final') renderFinalView();
+  if(id==='r32')    renderR32();
+  if(id==='r16')    renderKOStage('r16c', 8, S.r16, buildR16Feed(), R16_IDS, 'r16');
+  if(id==='qf')     renderKOStage('qfc',  4, S.qf,  buildQFFeed(),  QF_IDS,  'qf');
+  if(id==='sf')     renderKOStage('sfc',  2, S.sf,  buildSFFeed(),  SF_IDS,  'sf');
+  if(id==='final')  renderFinalView();
   if(id==='standings') renderStandings();
   updateViewingBanners();
 }
