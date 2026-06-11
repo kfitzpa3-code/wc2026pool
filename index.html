@@ -369,8 +369,8 @@ function initSupabase() {
 }
 const sbReady = initSupabase();
 
-// Picks lock at first kickoff: June 11, 2026 3:00 PM ET = 19:00 UTC
-const LOCK_TIME = new Date('2026-06-11T19:00:00Z');
+// Picks lock after first match kicks off: June 12, 2026 3:00 PM ET = 19:00 UTC
+const LOCK_TIME = new Date('2026-06-12T19:00:00Z');
 const isLocked  = () => new Date() >= LOCK_TIME;
 
 // ═══════════════════════════════════════
