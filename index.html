@@ -785,43 +785,42 @@ function teamThirdGroup(name, st) {
 }
 
 // Pre-assign each 3rd-place qualifier to exactly one R32 slot.
-// Uses iterative single-option assignment (stable matching):
-// first assign any qualifier that fits only one remaining slot,
-// repeat until all are placed.
+// Uses backtracking with most-constrained-variable heuristic.
 function assignQ3ToSlots(st) {
   st = st || S;
   const thirdSlots = R32_DEF
     .map((m, i) => ({ i, pool: m.b.pos==='3' ? m.b.p : m.a.pos==='3' ? m.a.p : null }))
     .filter(x => x.pool !== null);
 
-  const assigned = new Map();   // matchIdx → team name
-  const usedTeams = new Set();
+  const qualifiers = st.q3
+    .map(nm => ({ nm, grp: teamThirdGroup(nm, st) }))
+    .filter(q => q.grp !== null);
 
-  let changed = true;
-  while (changed) {
-    changed = false;
-    // Pass 1: assign any qualifier that fits exactly one unoccupied slot
-    for (const nm of st.q3) {
-      if (usedTeams.has(nm)) continue;
-      const grp = teamThirdGroup(nm, st);
-      if (!grp) continue;
-      const valid = thirdSlots.filter(x => !assigned.has(x.i) && x.pool.includes(grp));
-      if (valid.length === 1) {
-        assigned.set(valid[0].i, nm);
-        usedTeams.add(nm);
-        changed = true;
-      }
+  // Sort qualifiers most-constrained first (fewest valid slots)
+  qualifiers.sort((a, b) => {
+    const ca = thirdSlots.filter(s => s.pool.includes(a.grp)).length;
+    const cb = thirdSlots.filter(s => s.pool.includes(b.grp)).length;
+    return ca - cb;
+  });
+
+  const result = new Map();
+
+  function solve(idx, usedSlots) {
+    if (idx === qualifiers.length) return true;
+    const { nm, grp } = qualifiers[idx];
+    const valid = thirdSlots.filter(s => !usedSlots.has(s.i) && s.pool.includes(grp));
+    for (const slot of valid) {
+      result.set(slot.i, nm);
+      usedSlots.add(slot.i);
+      if (solve(idx + 1, usedSlots)) return true;
+      result.delete(slot.i);
+      usedSlots.delete(slot.i);
     }
+    return false;
   }
-  // Pass 2: assign remaining qualifiers to first available valid slot
-  for (const nm of st.q3) {
-    if (usedTeams.has(nm)) continue;
-    const grp = teamThirdGroup(nm, st);
-    if (!grp) continue;
-    const slot = thirdSlots.find(x => !assigned.has(x.i) && x.pool.includes(grp));
-    if (slot) { assigned.set(slot.i, nm); usedTeams.add(nm); }
-  }
-  return assigned;
+
+  solve(0, new Set());
+  return result;
 }
 
 function buildR32Feed(st) {
