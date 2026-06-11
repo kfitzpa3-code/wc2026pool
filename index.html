@@ -588,17 +588,24 @@ function flagOf(name){
   ).join('');
   return flag;
 }
-function resolveSlot(slot,st){
-  st=st||S;
-  if(slot.pos==='1'){const t=teamAt(slot.g,0,st);return{name:t.name,flag:t.flag,tbd:false};}
-  if(slot.pos==='2'){const t=teamAt(slot.g,1,st);return{name:t.name,flag:t.flag,tbd:false};}
-  const match=st.q3.find(nm=>{
-    for(const[gl,gd]of Object.entries(GRP)){
-      const ti=gd.t.indexOf(nm);if(ti>=0&&st.g[gl][2]===ti&&slot.p.includes(gl))return true;
-    }return false;
+function resolveSlot(slot, st, usedQ3) {
+  st = st || S;
+  if (slot.pos === '1') { const t=teamAt(slot.g,0,st); return {name:t.name,flag:t.flag,tbd:false}; }
+  if (slot.pos === '2') { const t=teamAt(slot.g,1,st); return {name:t.name,flag:t.flag,tbd:false}; }
+  // 3rd place — find a qualifier from the allowed pools that hasn't been used yet
+  const match = st.q3.find(nm => {
+    if (usedQ3 && usedQ3.has(nm)) return false; // already assigned
+    for (const [gl,gd] of Object.entries(GRP)) {
+      const ti = gd.t.indexOf(nm);
+      if (ti >= 0 && st.g[gl][2] === ti && slot.p.includes(gl)) return true;
+    }
+    return false;
   });
-  if(match)return{name:match,flag:flagOf(match),tbd:false};
-  return{name:`Best 3rd (${slot.p.join('/')})`,flag:'—',tbd:true};
+  if (match) {
+    if (usedQ3) usedQ3.add(match);
+    return {name:match, flag:flagOf(match), tbd:false};
+  }
+  return {name:`Best 3rd (${slot.p.join('/')})`, flag:'—', tbd:true};
 }
 const locked = () => isLocked() || viewingPlayer !== null;
 
@@ -776,9 +783,13 @@ function rankOf(name){ return FIFA_RANK[name] ? '#'+FIFA_RANK[name] : ''; }
 // ═══════════════════════════════════════
 // BUILD FEED ARRAYS FOR KNOCKOUT
 // ═══════════════════════════════════════
-function buildR32Feed(st){
-  st=st||S;
-  return R32_DEF.flatMap(m=>[resolveSlot(m.a,st),resolveSlot(m.b,st)]);
+function buildR32Feed(st) {
+  st = st || S;
+  const usedQ3 = new Set(); // track which 3rd-place qualifiers have been assigned
+  return R32_DEF.flatMap(m => [
+    resolveSlot(m.a, st, usedQ3),
+    resolveSlot(m.b, st, usedQ3)
+  ]);
 }
 function buildR16Feed(st){st=st||S; return R16_FEED.flatMap(([a,b])=>[st.r32[a]||null,st.r32[b]||null]);}
 function buildQFFeed(st){st=st||S; return QF_FEED.flatMap(([a,b])=>[st.r16[a]||null,st.r16[b]||null]);}
