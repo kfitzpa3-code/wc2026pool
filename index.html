@@ -391,6 +391,22 @@ const GRP = {
   L:{t:['Croatia','England','Ghana','Panama'],                    f:['🇭🇷','🏴󠁧󠁢󠁥󠁮󠁧󠁿','🇬🇭','🇵🇦']},
 };
 
+// 2-letter country codes for reliable CSS flag rendering as fallback
+const COUNTRY_CODE = {
+  'Czechia':'CZ','Mexico':'MX','South Africa':'ZA','South Korea':'KR',
+  'Bosnia & Herz.':'BA','Canada':'CA','Qatar':'QA','Switzerland':'CH',
+  'Brazil':'BR','Haiti':'HT','Morocco':'MA','Scotland':'GB',
+  'Australia':'AU','Paraguay':'PY','Türkiye':'TR','United States':'US',
+  'Curaçao':'CW','Ecuador':'EC','Germany':'DE','Ivory Coast':'CI',
+  'Japan':'JP','Netherlands':'NL','Sweden':'SE','Tunisia':'TN',
+  'Belgium':'BE','Egypt':'EG','Iran':'IR','New Zealand':'NZ',
+  'Cape Verde':'CV','Saudi Arabia':'SA','Spain':'ES','Uruguay':'UY',
+  'France':'FR','Iraq':'IQ','Norway':'NO','Senegal':'SN',
+  'Algeria':'DZ','Argentina':'AR','Austria':'AT','Jordan':'JO',
+  'Colombia':'CO','Congo DR':'CD','Portugal':'PT','Uzbekistan':'UZ',
+  'Croatia':'HR','England':'GB','Ghana':'GH','Panama':'PA',
+};
+
 // Official R32 matchups M73–M88
 const R32_DEF = [
   {id:'M73',a:{pos:'2',g:'A'}, b:{pos:'2',g:'B'}},
@@ -564,7 +580,13 @@ function teamAt(grp,rank,st){
   st=st||S; const i=st.g[grp][rank]; return {name:GRP[grp].t[i],flag:GRP[grp].f[i]};
 }
 function flagOf(name){
-  for(const g of Object.values(GRP)){const i=g.t.indexOf(name);if(i>=0)return g.f[i];}return'🏴';
+  const code = COUNTRY_CODE[name];
+  if (!code) return '🏴';
+  // Convert country code to regional indicator emojis (works on all platforms)
+  const flag = code.split('').map(c =>
+    String.fromCodePoint(c.charCodeAt(0) - 65 + 0x1F1E6)
+  ).join('');
+  return flag;
 }
 function resolveSlot(slot,st){
   st=st||S;
@@ -830,44 +852,61 @@ function renderKOStage(contId, count, stateArr, feed, matchIds, tabId) {
 function renderFinalView() {
   const cont=document.getElementById('finalc'); cont.innerHTML='';
   const st=viewingPlayer?viewingState:S;
-  const sf0=st.sf[0], sf1=st.sf[1];
-  const third3Arr=viewingPlayer?viewingState:S;
-  const champArr=viewingPlayer?viewingState:S;
 
-  // 3rd place match (M103)
+  // SF winners = finalists
+  const sf0=st.sf[0]||null, sf1=st.sf[1]||null;
+
+  // SF losers = 3rd place candidates
+  // Each SF match fed from QF: sf[0] came from qf[0] vs qf[1], sf[1] from qf[2] vs qf[3]
+  const sfLosers = [
+    (st.qf[0]&&st.qf[1]) ? (sf0===st.qf[0]?st.qf[1]:st.qf[0]||null) : null,
+    (st.qf[2]&&st.qf[3]) ? (sf1===st.qf[2]?st.qf[3]:st.qf[2]||null) : null,
+  ];
+
+  // ── 3RD PLACE MATCH (M103) ──
   const s3title=document.createElement('div'); s3title.className='ko-section-title';
-  s3title.textContent='M103 — 3rd Place Match (Miami, Jul 18)';
+  s3title.textContent='M103 — 3rd Place Match · Miami, Jul 18';
   cont.appendChild(s3title);
   const s3=document.createElement('div'); s3.className='mslot';
-  [sf0,sf1].forEach(name=>{
+  sfLosers.forEach(name=>{
     const row=document.createElement('div');
     const isTbd=!name, isWin=!isTbd&&st.third===name;
     row.className='mrow'+(isTbd?' tbd':'')+(isWin?' win':'')+(locked()?' locked-ui':'');
+    const flag=isTbd?'—':flagOf(name);
+    const rank=isTbd?'':rankOf(name);
     const wb=isWin?'<span class="wbadge">3RD ✓</span>':'';
-    row.innerHTML=`<span class="mf">${isTbd?'—':flagOf(name)}</span><span class="mn${isTbd?' tbd':''}">${isTbd?'SF loser TBD':name}</span>${wb}`;
-    if(!isTbd&&!locked())row.addEventListener('click',()=>{S.third=name;savePicks();renderFinalView();});
+    const rankSpan=rank?`<span class="mrank">${rank}</span>`:'';
+    row.innerHTML=`<span class="mf">${flag}</span><span class="mn${isTbd?' tbd':''}">${isTbd?'SF loser TBD':name}</span>${rankSpan}${wb}`;
+    if(!isTbd&&!locked()) row.addEventListener('click',()=>{S.third=name;savePicks();renderFinalView();});
     s3.appendChild(row);
   });
+  const s3note=document.createElement('div'); s3note.className='mslot-header';
+  s3note.style.textAlign='center'; s3note.style.padding='4px';
+  s3note.textContent = sfLosers[0]||sfLosers[1] ? 'Semifinal losers' : 'Pick SF winners first to populate';
+  s3.appendChild(s3note);
   cont.appendChild(s3);
 
-  // The Final (M104)
+  // ── THE FINAL (M104) ──
   const sftitle=document.createElement('div'); sftitle.className='ko-section-title';
-  sftitle.style.marginTop='18px'; sftitle.style.color='var(--gold-lt)';
+  sftitle.style.marginTop='20px'; sftitle.style.color='var(--gold-lt)';
   sftitle.textContent='M104 — THE FINAL · MetLife Stadium · Jul 19';
   cont.appendChild(sftitle);
-  const sf=document.createElement('div'); sf.className='mslot';
+  const sfSlot=document.createElement('div'); sfSlot.className='mslot';
   [sf0,sf1].forEach(name=>{
     const row=document.createElement('div');
     const isTbd=!name, isWin=!isTbd&&st.champ===name;
     row.className='mrow'+(isTbd?' tbd':'')+(isWin?' win':'')+(locked()?' locked-ui':'');
+    const flag=isTbd?'—':flagOf(name);
+    const rank=isTbd?'':rankOf(name);
     const wb=isWin?'<span class="wbadge">🏆 CHAMPION</span>':'';
-    row.innerHTML=`<span class="mf">${isTbd?'—':flagOf(name)}</span><span class="mn${isTbd?' tbd':''}">${isTbd?'Finalist TBD':name}</span>${wb}`;
-    if(!isTbd&&!locked())row.addEventListener('click',()=>{S.champ=name;savePicks();renderFinalView();});
-    sf.appendChild(row);
+    const rankSpan=rank?`<span class="mrank">${rank}</span>`:'';
+    row.innerHTML=`<span class="mf">${flag}</span><span class="mn${isTbd?' tbd':''}">${isTbd?'Finalist TBD':name}</span>${rankSpan}${wb}`;
+    if(!isTbd&&!locked()) row.addEventListener('click',()=>{S.champ=name;savePicks();renderFinalView();});
+    sfSlot.appendChild(row);
   });
-  cont.appendChild(sf);
+  cont.appendChild(sfSlot);
 
-  // Champion display
+  // ── CHAMPION DISPLAY ──
   const cn=st.champ;
   const box=document.createElement('div'); box.className='champbox';
   box.innerHTML=`<div class="clbl">🏆 World Champion</div>
