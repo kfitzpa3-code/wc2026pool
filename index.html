@@ -345,8 +345,8 @@ main{padding:14px 16px;max-width:700px;margin:0 auto;}
 // Paste your project URL and anon key here, OR enter them in the
 // ⚙️ Config screen that appears on first load.
 // ═══════════════════════════════════════
-let SUPABASE_URL  = localStorage.getItem('wc26_sb_url')  || 'https://cekeatlxiqggcucscbjd.supabase.co';
-let SUPABASE_ANON = localStorage.getItem('wc26_sb_key')  || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNla2VhdGx4aXFnZ2N1Y3NjYmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwNDYwMzYsImV4cCI6MjA5NjYyMjAzNn0.9LduCQMEe0L7FM1XXJwhmLs45tN4OeVEM5OqmLfj3SE';
+const SUPABASE_URL  = 'https://cekeatlxiqggcucscbjd.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNla2VhdGx4aXFnZ2N1Y3NjYmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwNDYwMzYsImV4cCI6MjA5NjYyMjAzNn0.9LduCQMEe0L7FM1XXJwhmLs45tN4OeVEM5OqmLfj3SE';
 
 // Hard-code your values here to skip the config screen:
 // SUPABASE_URL  = 'https://xxxx.supabase.co';
@@ -354,11 +354,7 @@ let SUPABASE_ANON = localStorage.getItem('wc26_sb_key')  || 'eyJhbGciOiJIUzI1NiI
 
 let sb = null;
 function initSupabase() {
-  if (!SUPABASE_URL || !SUPABASE_ANON ||
-      SUPABASE_URL === 'YOUR_SUPABASE_URL' ||
-      SUPABASE_URL === 'LOCAL') return false;
   try {
-    // Handle different CDN bundle export names
     const createClient =
       (typeof supabase !== 'undefined' && supabase.createClient) ||
       (typeof Supabase !== 'undefined' && Supabase.createClient) ||
